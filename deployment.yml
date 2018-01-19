@@ -1,0 +1,30 @@
+# fred/deployment.yaml
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: fred-deployment
+  labels:
+    app: fred
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fred
+  template:
+    metadata:
+      labels:
+        app: fred
+    spec:
+      containers:
+        - name: fred
+          image: gcr.io/noted-amphora-191501/fred:latest
+          env:
+            - name: HOST_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: fred-config
+                  key: hostAddress
+          ports:
+            - name: grpc
+              containerPort: 7800

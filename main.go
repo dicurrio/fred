@@ -5,28 +5,41 @@ package main
 import (
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
 	pb "github.com/dicurrio/protorepo/fred"
 	"google.golang.org/grpc"
 )
 
-const port = ":50051"
+var hostAddress = os.Getenv("HOST_ADDRESS")
 
 func main() {
+	// Setup
 	log.SetPrefix("FRED :: ")
-
 	log.Print("Starting up...")
-	listener, err := net.Listen("tcp", port)
+
+	// Establish TCP Listener
+	listener, err := net.Listen("tcp", hostAddress)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	} else {
-		log.Printf("Listening on %v", port)
+		log.Printf("Listening on %v", hostAddress)
 	}
 
-	s := grpc.NewServer()
-	pb.RegisterFredServer(s, &fredServer{})
+	// Start gRPC Server
+	server := grpc.NewServer()
+	pb.RegisterFredServer(server, &fredServer{})
+	go func() {
+		log.Print("Listening on " + hostAddress)
+		log.Fatal(server.Serve(listener))
+	}()
 
-	if err := s.Serve(listener); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
+	// Graceful Shutdown
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	<-signalChan // Blocks until SIGINT or SIGTERM received
+	log.Print("Shutdown signal received, exiting...")
+	server.GracefulStop()
 }

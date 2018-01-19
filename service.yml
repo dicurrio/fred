@@ -1,0 +1,15 @@
+# fred/service.yml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: fred-service
+  labels:
+    app: fred
+spec:
+  selector:
+    app: fred
+  ports:
+    - name: grpc
+      port: 80 
+      targetPort: grpc
