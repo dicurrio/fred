@@ -9,11 +9,19 @@ import (
 	"os/signal"
 	"syscall"
 
+	"google.golang.org/grpc/credentials"
+
 	pb "github.com/dicurrio/protorepo/fred"
 	"google.golang.org/grpc"
 )
 
-var hostAddress = os.Getenv("HOST_ADDRESS")
+const (
+	crt         = "./tls/fred-cert.pem"
+	key         = "./tls/fred-key.pem"
+	hostAddress = "localhost:3001"
+)
+
+// var hostAddress = os.Getenv("HOST_ADDRESS")
 
 func main() {
 	// Setup
@@ -25,14 +33,20 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	} else {
-		log.Printf("Listening on %v", hostAddress)
+		log.Printf("Listening on %v", listener.Addr().String())
+	}
+
+	// Create TLS credentials
+	creds, err := credentials.NewServerTLSFromFile(crt, key)
+	if err != nil {
+		log.Fatalf("Failed to load TLS files: %v", err)
 	}
 
 	// Start gRPC Server
-	server := grpc.NewServer()
+	server := grpc.NewServer(grpc.Creds(creds))
 	pb.RegisterFredServer(server, &fredServer{})
 	go func() {
-		log.Print("Listening on " + hostAddress)
+		log.Print("Serving...")
 		log.Fatal(server.Serve(listener))
 	}()
 

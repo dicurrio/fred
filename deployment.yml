@@ -27,4 +27,12 @@ spec:
                   key: hostAddress
           ports:
             - name: grpc
-              containerPort: 7800
+              containerPort: 433
+          volumeMounts:
+            - name: fred-tls
+              readOnly: true
+              mountPath: /tls
+      volumes:
+        - name: fred-tls
+          secret:
+            secretName: fred-tls
